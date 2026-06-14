@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wealth Management Portfolio Risk Monitor - Advanced Anomaly Detection</title>
+  <!-- SEO & Meta Tags -->
+  <meta name="description" content="Advanced risk monitoring dashboard using PCA Residual Analysis, DBSCAN clustering, and KNN Neighborhood Scoring to detect anomalous asset behaviour in wealth portfolios.">
+  <meta name="keywords" content="portfolio risk, anomaly detection, PCA, DBSCAN, KNN, quantitative finance, wealth management">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind is NOT used as per guidelines. Using Vanilla CSS. -->
+  <link rel="stylesheet" href="index.css">
+  
+  <!-- Chart.js and Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation & Dashboard Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <i data-lucide="shield-alert"></i>
+        </div>
+        <div class="logo-text">
+          <h1>AURA <span class="accent-text">RiskMonitor</span></h1>
+          <p class="subtitle">PCA, DBSCAN &amp; KNN Portfolio Anomaly Engine</p>
+        </div>
+      </div>
+      
+      <!-- Top Overview Metrics -->
+      <div class="header-stats">
+        <div class="stat-card" id="stat-health">
+          <div class="stat-label">Portfolio Health Index</div>
+          <div class="stat-value text-emerald">94.2%</div>
+          <div class="stat-indicator normal">Stable</div>
+        </div>
+        <div class="stat-card" id="stat-anomalies">
+          <div class="stat-label">Anomalies Detected</div>
+          <div class="stat-value text-rose" id="total-anomalies-count">2</div>
+          <div class="stat-indicator warning">Action Required</div>
+        </div>
+        <div class="stat-card" id="stat-risk">
+          <div class="stat-label">Portfolio Volatility (Daily)</div>
+          <div class="stat-value text-amber" id="portfolio-vol-value">1.18%</div>
+          <div class="stat-indicator">Normal Market Mode</div>
+        </div>
+        <div class="stat-card hide-mobile">
+          <div class="stat-label">Market Regime</div>
+          <div class="stat-value" id="market-regime-value">Systemic Low-Vol</div>
+          <div class="stat-indicator text-blue">Calculated via PCA</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Sidebar Panel: Parameters and Shock Simulation -->
+      <aside class="sidebar">
+        <!-- Section: Parameter Tuning -->
+        <div class="sidebar-section panel-glass">
+          <h3 class="section-title"><i data-lucide="sliders-horizontal"></i> Algorithmic Parameters</h3>
+          
+          <!-- PCA Parameters -->
+          <div class="parameter-group">
+            <div class="parameter-header">
+              <label for="pca-components">PCA Components (Systemic Factors)</label>
+              <span class="parameter-val" id="pca-components-val">3</span>
+            </div>
+            <input type="range" id="pca-components" min="1" max="6" step="1" value="3">
+            <p class="parameter-help">Defines the number of principal components representing systematic risk. Higher components mean more variance explained, reducing residuals.</p>
+          </div>
+
+          <!-- DBSCAN Parameters -->
+          <div class="parameter-group">
+            <div class="parameter-header">
+              <label for="dbscan-eps">DBSCAN Epsilon (&epsilon;)</label>
+              <span class="parameter-val" id="dbscan-eps-val">1.8</span>
+            </div>
+            <input type="range" id="dbscan-eps" min="0.5" max="3.5" step="0.1" value="1.8">
+            
+            <div class="parameter-header" style="margin-top: 10px;">
+              <label for="dbscan-min-samples">DBSCAN Min Samples</label>
+              <span class="parameter-val" id="dbscan-min-samples-val">3</span>
+            </div>
+            <input type="range" id="dbscan-min-samples" min="2" max="10" step="1" value="3">
+            <p class="parameter-help">Parameters for density-based clustering. Points not close to at least Min Samples within radius Epsilon are marked as Noise (anomalies).</p>
+          </div>
+
+          <!-- KNN Parameters -->
+          <div class="parameter-group">
+            <div class="parameter-header">
+              <label for="knn-k">KNN Neighbors (K)</label>
+              <span class="parameter-val" id="knn-k-val">5</span>
+            </div>
+            <input type="range" id="knn-k" min="3" max="10" step="1" value="5" disabled>
+            <p class="parameter-help">Fixed at 5 per specification (Neighborhood Scoring 5). Measures isolation based on distance to nearest neighbors.</p>
+          </div>
+
+          <!-- Anomaly Cutoff Slider -->
+          <div class="parameter-group">
+            <div class="parameter-header">
+              <label for="anomaly-sensitivity">KNN Score Threshold</label>
+              <span class="parameter-val" id="anomaly-sensitivity-val">2.2</span>
+            </div>
+            <input type="range" id="anomaly-sensitivity" min="1.0" max="4.0" step="0.1" value="2.2">
+            <p class="parameter-help">Threshold for KNN distance score to flag an asset as anomalous.</p>
+          </div>
+        </div>
+
+        <!-- Section: Shock Injection Simulator -->
+        <div class="sidebar-section panel-glass shock-panel">
+          <h3 class="section-title"><i data-lucide="zap"></i> Risk Stress Simulator</h3>
+          <p class="simulator-intro">Simulate black swan events, sector stress, or idiosyncratic jumps to test detector resilience.</p>
+          
+          <div class="form-group">
+            <label for="shock-target">Target Asset</label>
+            <select id="shock-target">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="shock-type">Shock Scenario</label>
+            <select id="shock-type">
+              <option value="idiosyncratic">Idiosyncratic Shock (+7&sigma; Jump)</option>
+              <option value="decoupling">Volatility Decoupling (Uncorrelated Noise)</option>
+              <option value="sector-meltdown">Sector Liquidity Crisis (-30% Drift)</option>
+              <option value="systemic-crash">Systemic Market Flash Crash</option>
+            </select>
+          </div>
+
+          <button id="btn-inject-shock" class="btn btn-primary btn-block">
+            <i data-lucide="flame"></i> Inject Stress Event
+          </button>
+          
+          <button id="btn-reset-data" class="btn btn-secondary btn-block" style="margin-top: 8px;">
+            <i data-lucide="refresh-cw"></i> Reset Portfolio Data
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Dashboard Content Grid -->
+      <main class="dashboard-content">
+        <div class="chart-grid">
+          <!-- Card 1: PCA Residual Analysis -->
+          <div class="chart-card panel-glass" id="card-pca">
+            <div class="chart-card-header">
+              <div class="card-title-group">
+                <h3>PCA Idiosyncratic Residual Analysis</h3>
+                <span class="badge badge-pca">Reconstruction Error</span>
+              </div>
+              <div class="card-info-popover" title="PCA projects return history onto principal components. Assets that behave differently from the overall market have high residual errors, capturing idiosyncratic risk.">
+                <i data-lucide="help-circle"></i>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-pca-residual"></canvas>
+            </div>
+            <div class="chart-footer">
+              <div class="stat-pill"><span class="label">PCA Explained Variance:</span> <span class="value" id="pca-variance-pct">78.4%</span></div>
+              <div class="stat-pill"><span class="label">Top Residual:</span> <span class="value text-rose" id="pca-top-residual">--</span></div>
+            </div>
+          </div>
+
+          <!-- Card 2: DBSCAN Cluster Map -->
+          <div class="chart-card panel-glass" id="card-dbscan">
+            <div class="chart-card-header">
+              <div class="card-title-group">
+                <h3>DBSCAN Systematic Risk Clustering</h3>
+                <span class="badge badge-dbscan">Exposure Map</span>
+              </div>
+              <div class="card-info-popover" title="Clustering of assets by their factor loadings (PC1 & PC2). Density-based clusters group correlated assets; points flagged as noise (-1, red diamonds) indicate anomalous risk exposure.">
+                <i data-lucide="help-circle"></i>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-dbscan-clustering"></canvas>
+            </div>
+            <div class="chart-footer">
+              <div class="stat-pill"><span class="label">Clusters:</span> <span class="value" id="dbscan-cluster-count">5 Clusters</span></div>
+              <div class="stat-pill"><span class="label">DBSCAN Outliers:</span> <span class="value text-rose" id="dbscan-outliers-count">--</span></div>
+            </div>
+          </div>
+
+          <!-- Card 3: KNN Neighborhood Anomaly Score -->
+          <div class="chart-card panel-glass" id="card-knn">
+            <div class="chart-card-header">
+              <div class="card-title-group">
+                <h3>K-Nearest Neighbors Neighborhood Score (K=5)</h3>
+                <span class="badge badge-knn">Isolation Score</span>
+              </div>
+              <div class="card-info-popover" title="Calculates the average Euclidean distance to the 5 closest neighbors in factor and volatility space. Highly isolated assets will exceed the threshold line, representing exposure risk.">
+                <i data-lucide="help-circle"></i>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="chart-knn-scoring"></canvas>
+            </div>
+            <div class="chart-footer">
+              <div class="stat-pill"><span class="label">K Parameter:</span> <span class="value">5 (Specification)</span></div>
+              <div class="stat-pill"><span class="label">Max KNN Distance:</span> <span class="value text-rose" id="knn-max-score">--</span></div>
+            </div>
+          </div>
+
+          <!-- Card 4: Risk Exposure Matrix Heatmap or Asset Log -->
+          <div class="chart-card panel-glass" id="card-correlation">
+            <div class="chart-card-header">
+              <div class="card-title-group">
+                <h3>Risk Classification &amp; Exposure Log</h3>
+                <span class="badge badge-log">Anomaly Log</span>
+              </div>
+            </div>
+            
+            <div class="log-table-container">
+              <table class="anomaly-table" id="anomaly-log-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Sector</th>
+                    <th>PCA Residual</th>
+                    <th>DBSCAN Cluster</th>
+                    <th>KNN Distance</th>
+                    <th>Risk Status</th>
+                  </tr>
+                </thead>
+                <tbody id="anomaly-table-body">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="chart-footer">
+              <div class="legend-group">
+                <span class="legend-item"><span class="color-dot normal"></span> Normal</span>
+                <span class="legend-item"><span class="color-dot warning"></span> Warning (1 anomaly)</span>
+                <span class="legend-item"><span class="color-dot critical"></span> Critical (2+ anomalies)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Asset Detail Drawer / Sidebar (Visible when an asset is clicked) -->
+      <aside class="detail-drawer panel-glass closed" id="asset-detail-drawer">
+        <button class="btn-close-drawer" id="btn-close-detail"><i data-lucide="x"></i></button>
+        
+        <div class="drawer-content">
+          <div class="drawer-header">
+            <span class="asset-sector" id="detail-asset-sector">TECHNOLOGY</span>
+            <h2 id="detail-asset-name">AAPL</h2>
+            <p id="detail-asset-desc">Apple Inc. - Core Equity Portfolio</p>
+          </div>
+
+          <div class="detail-stats-grid">
+            <div class="detail-stat-box">
+              <div class="num" id="detail-stat-return">0.12%</div>
+              <div class="lbl">Avg Return</div>
+            </div>
+            <div class="detail-stat-box">
+              <div class="num text-amber" id="detail-stat-vol">1.25%</div>
+              <div class="lbl">Volatility</div>
+            </div>
+            <div class="detail-stat-box">
+              <div class="num" id="detail-stat-sharpe">1.52</div>
+              <div class="lbl">Sharpe Ratio</div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4><i data-lucide="activity"></i> 100-Day Performance History</h4>
+            <div class="drawer-chart-container">
+              <canvas id="chart-asset-returns"></canvas>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4><i data-lucide="binary"></i> Quantitative Risk Breakdown</h4>
+            <ul class="risk-metrics-list">
+              <li>
+                <div class="metric-item">
+                  <div class="metric-name">PCA Reconstruction Error</div>
+                  <div class="metric-value-group">
+                    <span class="metric-val" id="detail-metric-pca-val">0.45</span>
+                    <span class="metric-status status-safe" id="detail-metric-pca-status">Normal</span>
+                  </div>
+                </div>
+                <div class="metric-bar-bg"><div class="metric-bar" id="detail-metric-pca-bar" style="width: 45%;"></div></div>
+              </li>
+              <li>
+                <div class="metric-item">
+                  <div class="metric-name">DBSCAN Neighborhood Density</div>
+                  <div class="metric-value-group">
+                    <span class="metric-val" id="detail-metric-dbscan-val">Cluster 1</span>
+                    <span class="metric-status status-safe" id="detail-metric-dbscan-status">Clustered</span>
+                  </div>
+                </div>
+                <div class="metric-bar-bg"><div class="metric-bar" id="detail-metric-dbscan-bar" style="width: 100%;"></div></div>
+              </li>
+              <li>
+                <div class="metric-item">
+                  <div class="metric-name">KNN Isolation Score ($K=5$)</div>
+                  <div class="metric-value-group">
+                    <span class="metric-val" id="detail-metric-knn-val">1.22</span>
+                    <span class="metric-status status-safe" id="detail-metric-knn-status">Normal</span>
+                  </div>
+                </div>
+                <div class="metric-bar-bg"><div class="metric-bar" id="detail-metric-knn-bar" style="width: 30%;"></div></div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="detail-section advisory-box alert-normal" id="detail-advisory-box">
+            <h4><i data-lucide="shield-check" id="advisory-icon"></i> Risk Advisory</h4>
+            <p id="detail-advisory-text">Asset is behaving within acceptable risk thresholds. Standard allocations are justified. Co-movements are well aligned with systemic sector drivers.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+  
+  <!-- Main Script -->
+  <script src="app.js"></script>
+</body>
+</html>
